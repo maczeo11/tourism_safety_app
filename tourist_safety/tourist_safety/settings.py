@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,7 +40,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'incidents',
     'users',   
+    'rest_framework.authtoken',
+
 ]
 
 MIDDLEWARE = [
@@ -78,17 +82,25 @@ WSGI_APPLICATION = 'tourist_safety.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 # settings.py
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'travel',
-        'USER': 'myadmin',
-        'PASSWORD': 'Mydb()12',
-        'HOST': 'localhost',
-        'PORT': '5432',
+if os.getenv('USE_SQLITE') == '1':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
-
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'travel',
+            'USER': 'myadmin',
+            'PASSWORD': 'Mydb()12',
+            'HOST': 'localhost',
+            'PORT': '5432',
+        }
+    }
+CORS_ALLOW_ALL_ORIGINS = True
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -129,3 +141,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Use TokenAuthentication as the primary method for the API
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        # Set the default that all endpoints require authentication
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+}
