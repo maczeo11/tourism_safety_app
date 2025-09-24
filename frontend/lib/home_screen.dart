@@ -1,6 +1,7 @@
 // lib/home_screen.dart
 
 import 'package:flutter/material.dart';
+import 'map_screen.dart'; // Import the new map screen
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -24,8 +25,11 @@ class HomeScreen extends StatelessWidget {
               print('Get UUID tapped!');
             }),
             _buildDashboardCard(context, 'Get Live Location', Icons.location_on, () {
-              // TODO: Implement live location functionality
-              print('Get Live Location tapped!');
+              // Navigate to the MapScreen when this card is tapped
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MapScreen()),
+              );
             }),
             _buildDashboardCard(context, 'Blank Card 1', Icons.apps, () {
               // TODO: Implement functionality for blank card 1
