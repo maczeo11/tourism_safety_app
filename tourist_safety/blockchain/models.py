@@ -40,12 +40,18 @@ class Block(models.Model):
     
     def calculate_hash(self):
         """Calculate the hash of this block"""
-        block_string = f"{self.index}{self.timestamp}{self.previous_hash}{self.nonce}"
+        # Use a consistent string format for hash calculation
+        timestamp_str = self.timestamp.isoformat() if self.timestamp else ""
+        block_string = f"{self.index}{timestamp_str}{self.previous_hash}{self.nonce}"
         return hashlib.sha256(block_string.encode()).hexdigest()
     
     def save(self, *args, **kwargs):
-        if not self.hash:
-            self.hash = self.calculate_hash()
+        # Always recalculate hash to ensure consistency
+        # Note: timestamp is set by auto_now_add, so we need to recalculate after save
+        super().save(*args, **kwargs)
+        # Recalculate hash after timestamp is set
+        self.hash = self.calculate_hash()
+        # Save again to store the correct hash
         super().save(*args, **kwargs)
 
 
@@ -95,11 +101,12 @@ class BlockchainService:
         new_index = (latest_block.index + 1) if latest_block else 0
         
         # Create new block
-        new_block = Block.objects.create(
+        new_block = Block(
             blockchain=blockchain,
             index=new_index,
             previous_hash=latest_block.hash if latest_block else "",
         )
+        new_block.save()  # This will trigger the hash calculation
         
         # Create UserUUID entries for this block
         user_uuids = []
