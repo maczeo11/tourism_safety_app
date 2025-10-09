@@ -1,5 +1,5 @@
 # users/views.py
-
+from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
@@ -26,7 +26,8 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            login(request, user)  # Auto-login after registration
+            # The login() call here is for session-based auth, which is fine to keep
+            login(request, user)
             return Response({
                 'success': True,
                 'user': UserSerializer(user).data
@@ -36,7 +37,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     """
-    Log in an existing user.
+    Log in an existing user and return an auth token.
     Public endpoint — no authentication required.
     """
     permission_classes = [AllowAny]
@@ -49,10 +50,12 @@ class LoginView(APIView):
             user = authenticate(request, username=username, password=password)
 
             if user is not None:
-                login(request, user)
+                # Get or create a token for the user
+                token, created = Token.objects.get_or_create(user=user)
                 return Response({
                     'success': True,
-                    'user': UserSerializer(user).data
+                    'user': UserSerializer(user).data,
+                    'token': token.key  # Return the token here
                 })
             else:
                 return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -62,13 +65,21 @@ class LoginView(APIView):
 class LogoutView(APIView):
     """
     Log out the current user.
-    Requires authentication.
+    Requires authentication (via Token).
     """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        logout(request)
-        return Response({'success': True, 'message': 'Logged out'})
+        # When using token auth, logout is handled on the client by deleting the token.
+        # This endpoint can be used to invalidate the token on the server side if needed.
+        try:
+            request.user.auth_token.delete()
+        except (AttributeError):
+            pass # Fails silently if token does not exist
+        
+        logout(request) # Also clears any session
+        
+        return Response({'success': True, 'message': 'Logged out successfully.'})
 
 
 class MeView(APIView):
